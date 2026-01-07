@@ -131,7 +131,13 @@ class Net(object):
         for param, target_param in zip(self.Actor_eval.parameters(), self.Actor_target.parameters()):
             target_param.data.copy_(TAU * param.data + (1 - TAU) * target_param.data)
 
-        indices = np.random.choice(self.MEMORY_CAPACITY, size=BATCH_SIZE)
+        # indices = np.random.choice(self.MEMORY_CAPACITY, size=BATCH_SIZE)
+        # 和TD3一样先warmup再学，而且不会采到未写入的全0数据
+        max_mem = min(self.pointer, self.MEMORY_CAPACITY)
+        if max_mem < BATCH_SIZE:
+            return
+        indices = np.random.choice(max_mem, size=BATCH_SIZE, replace=False)
+
         bt = self.memory[indices, :]  # ;print(bt.shape)  #
         bs = torch.FloatTensor(bt[:, :self.s_dim]).to(device)  # ;print(bs.shape) #
         ba = torch.FloatTensor(bt[:, self.s_dim: self.s_dim + self.a_dim]).to(device)  # ;print(ba.shape) #
